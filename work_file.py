@@ -11,8 +11,6 @@ cursor = connection.cursor()
 #cursor.execute('CREATE TABLE update_from (symbol varchar, date_from varchar)')
 
 
-symbols = ['AAPL', 'MSFT', 'AMZN', 'FB', 'GOOG']
-
 
 def write_end_dates(dates: dict) -> None:
     df = pd.read_sql('SELECT * FROM update_from', connection, index_col='symbol')
@@ -34,5 +32,17 @@ def load_database(symbols: (List[str], str)):
     write_end_dates(DataFetcher.end_dates_storage)
 
 
-def update_database(symbols: (List[str], str)):
-    pass
+def update_database(symbols: List[str]):
+    update_dates = pd.read_sql('SELECT * FROM update_from', connection).set_index('symbol')
+
+    for symbol in symbols:
+        start_date = update_dates.loc[symbol, 'date_from']
+        current_df = pd.read_sql(f'SELECT * FROM {symbol}', connection)
+        obj = DataFetcher(symbol, start_date)
+        new_data = obj.fetch()
+        new_data = DataModifier(new_data).add_daily_returns()
+        current_df.drop(current_df.index[:len(new_data.index)], inplace=True)
+
+        current_df = current_df.append(new_data, ignore_index=True)
+        DBWriter(current_df, symbol).write_to_table()
+    write_end_dates(DataFetcher.end_dates_storage)
