@@ -1,10 +1,11 @@
 from stock_database.data_fetcher import COLUMNS
 import sqlite3
 import pandas as pd
-from abc import ABC
+from abc import ABC, abstractmethod
 
 
 class DBConnector(ABC):
+    @abstractmethod
     def __init__(self):
         self.connection = sqlite3.connect('stock_info.db')
         self.cursor = self.connection.cursor()
