@@ -8,9 +8,6 @@ import pandas as pd
 connection = sqlite3.connect('stock_info.db')
 cursor = connection.cursor()
 
-#cursor.execute('CREATE TABLE update_from (symbol varchar, date_from varchar)')
-
-
 
 def write_end_dates(dates: dict) -> None:
     df = pd.read_sql('SELECT * FROM update_from', connection, index_col='symbol')
