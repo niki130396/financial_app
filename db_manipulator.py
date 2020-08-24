@@ -1,14 +1,20 @@
 from stock_database.data_fetcher import COLUMNS
+from stock_database.miscellaneous import SQLiteKeyWords
 import sqlite3
 import pandas as pd
-from abc import ABC, abstractmethod
+from abc import ABC
 
 
 class DBConnector(ABC):
-    @abstractmethod
     def __init__(self):
         self.connection = sqlite3.connect('stock_info.db')
         self.cursor = self.connection.cursor()
+
+
+class DBMetaData(DBConnector):
+    @property
+    def schema_tables(self):
+        return [table[0] for table in self.cursor.execute('SELECT name FROM sqlite_master WHERE type = "table"').fetchall() if table[0] not in SQLiteKeyWords]
 
 
 class DBWriter(DBConnector):
@@ -18,7 +24,7 @@ class DBWriter(DBConnector):
         self.table_name = symbol
 
     def write_to_table(self):
-        self.data.to_sql(self.table_name, self.connection, if_exists='replace', index=False)
+        self.data.to_sql(self.table_name, self.connection, if_exists='replace', index=True)
 
 
 class TableCreator(DBConnector):
@@ -34,7 +40,7 @@ class DataAggregator(DBConnector):
     def __init__(self):
         DBConnector.__init__(self)
         self.tables = [i[0] for i in self.cursor.execute("SELECT symbol FROM stock_info").fetchall()]
-        self.mapping_table = pd.read_sql('SELECT * FROM stock_info', self.connection).set_index('symbol')
+        self.mapping_table = pd.read_sql('SELECT * FROM stock_info', self.connection, index_col='symbol')
 
     def aggregate_data(self):
         for table in self.tables:
@@ -53,4 +59,3 @@ class DataAggregator(DBConnector):
         self.mapping_table.reset_index(inplace=True)
         self.mapping_table.to_sql('stock_info', self.connection, if_exists='replace', index=False)
         return self.mapping_table
-
