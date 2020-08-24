@@ -3,7 +3,7 @@ from pandas_datareader import DataReader
 from pandas_datareader._utils import RemoteDataError
 import pandas as pd
 
-COLUMNS = ['Date', 'High', 'Low', 'Open', 'Close', 'Volume', 'Adj_Close', 'Daily_Returns']
+COLUMNS = ['High', 'Low', 'Open', 'Close', 'Volume', 'Adj_Close', 'Daily_Returns']
 
 
 class DataFetcher:
@@ -27,8 +27,8 @@ class DataModifier:
         self.data = data
 
     def add_daily_returns(self) -> pd.DataFrame:
-        self.data.reset_index(inplace=True)
         self.data = self.data.astype({'Adj Close': float})
         self.data['Daily_Returns'] = self.data['Adj Close'].pct_change()
+        self.data.drop(self.data.index[:1], inplace=True)
         self.data.columns = COLUMNS
         return self.data
